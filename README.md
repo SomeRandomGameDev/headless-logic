@@ -24,7 +24,7 @@ All of this is planned to be implemented in C++11. At mid/long term, this will b
 
 ## Contribution
 
-Feel free to participate and propose stuff via pull request or issuing. All the ideas are welcomed. But remember:
+Feel free to participate and propose stuff via pull request or issuing or chatting via [gitter](https://gitter.im/stoned-logic/Lobby). All the ideas are welcomed. But remember:
 - Lightweight
 - No Dependency
 - Well-documented
