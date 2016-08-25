@@ -17,6 +17,7 @@
 #define HEADLESS_LOGIC_GENETIC_ALGORITHM
 
 #include <random>
+#include <tuple>
 
 namespace Headless {
     namespace Logic {
@@ -50,6 +51,7 @@ namespace Headless {
                     Trivial(unsigned int pSize) : _count(pSize) {
                         _pool = new C*[pSize];
                         _score = new double[pSize];
+                        _reverse = new double[pSize];
                     }
 
                     /**
@@ -58,6 +60,7 @@ namespace Headless {
                     ~Trivial() {
                         delete []_pool;
                         delete []_score;
+                        delete []_reverse;
                     }
 
                     /**
@@ -81,7 +84,7 @@ namespace Headless {
                      * @param mutators Set of operators/mutators for new pool creation.
                      * @return The number of candidates stored in the specified buffer.
                      */
-                    template <typename E, typename... M> int train(E* env,
+                    template <typename E, typename... M> std::tuple<int, double, int> train(E* env,
                             unsigned int maxGen, double minErr, double eliteSize,
                             C** store, unsigned int size,
                             M... mutators) {
@@ -90,15 +93,23 @@ namespace Headless {
                         env->reserve(_pool, _count);
 
                         // Loop on generations.
-                        for(unsigned int g = 0;
-                                (g < maxGen) && (evaluate(env) > minErr);
-                                ++g) {
+                        double minimum;
+                        unsigned int generation;
+                        for(generation = 0;
+                                (generation < maxGen) && ((minimum = evaluate(env)) > minErr);
+                                ++generation) {
                             // At this point, the pool is full and sorted.
+                            // Let's create a reverse score board.
+                            double totalScore = 0;
+                            for(unsigned int i = 0; i < eliteCount; ++i) {
+                                _reverse[eliteCount - i] = _score[i];
+                                totalScore += _score[i];
+                            }
                             // Let's recycle candidates from eliteCount to _count - 1.
                             #pragma omp parallel for
                             for(unsigned int i = eliteCount; i < _count; ++i) {
                                 // Randomly choose a mutators.
-                                mutate(i, eliteCount, mutators...);
+                                mutate(totalScore, i, eliteCount, mutators...);
                             }
                         }
 
@@ -110,28 +121,28 @@ namespace Headless {
                         // Clean-up the pool.
                         env->release(_pool, _count);
 
-                        return number;
+                        return std::make_tuple(generation, minimum, number);
                     }
 
                 private:
                     /**
                      * make a new offspring out of the available mutators.
                      */
-                    template <typename M, typename... O> void mutate(unsigned int pos, unsigned int count,
+                    template <typename M, typename... O> void mutate(double total, unsigned int pos, unsigned int count,
                             M mutator, O... others) {
                         std::random_device rd;
                         std::mt19937 mt(rd());
                         std::uniform_real_distribution<double> dist(0.0, 1.0);
                         double rnd = dist(mt);
                         if(rnd < mutator->threshold()) {
-                            mutator->mutate(_pool, count, _pool[pos]);
+                            mutator->mutate(_pool, _reverse, total, count, _pool[pos]);
                         } else {
-                            mutate(pos, count, others...);
+                            mutate(total, pos, count, others...);
                         }
                     }
 
-                    template <typename M> void mutate(unsigned int pos, unsigned int count, M mutator) {
-                        mutator->mutate(_pool, count, _pool[pos]);
+                    template <typename M> void mutate(double total, unsigned int pos, unsigned int count, M mutator) {
+                        mutator->mutate(_pool, _reverse, total, count, _pool[pos]);
                     }
 
                     /**
@@ -212,6 +223,11 @@ namespace Headless {
                      * Pool score.
                      */
                     double *_score;
+
+                    /**
+                     * Buffer for reversed pool score.
+                     */
+                    double *_reverse;
 
                     /**
                      * Pool count.
