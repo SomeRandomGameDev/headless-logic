@@ -172,7 +172,17 @@ void ClassicMutator::mutate(Candidate** parents, double* score, double total, un
     }
 }
 
-
+// Visitor -------------------------------------------------------------------
+class Visitor {
+    public:
+        void visit(Candidate **pool, unsigned int size) {
+            std::cout << "----------" << std::endl;
+            for(unsigned int i = 0; i < size; ++i) {
+                std::cout << "#" << i << " "
+                    << pool[i]->data() << std::endl;
+            }
+        }
+};
 
 // Example Entry Point -------------------------------------------------------
 int main(void) {
@@ -184,6 +194,7 @@ int main(void) {
     Environment env;
     MateMutator mate;
     ClassicMutator mutate;
+    Visitor visitor;
 
     Candidate goal;
     char *data = goal.data();
@@ -228,7 +239,7 @@ int main(void) {
     int result;
     double minimum;
     int number;
-    std::tie(number, minimum, result) = engine.train(&env,
+    std::tie(number, minimum, result) = engine.train(&env, &visitor,
             MAX_GENERATION, MIN_ERROR, 0.1,
             store, POOL_SIZE,
             &mutate, &mate);

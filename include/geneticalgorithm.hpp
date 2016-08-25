@@ -41,7 +41,6 @@ namespace Headless {
              * @param <C> Candidates to be evaluated and modified.
              */
             template <typename C> class Trivial {
-
                 public:
 
                     /**
@@ -71,11 +70,13 @@ namespace Headless {
                      *      - void release(C**, unsigned int)
                      *      - double evaluate (const C*)
                      *      - C* clone(const C*)
+                     * @param <V> Visitor.
                      * @param <... M> Set of operators/mutators types. A mutator must define
                      *      the following methods:
                      *      - double threshold()
                      *      - void mutate(C**, unsigned int, C*);
                      * @param env Environment.
+                     * @param visitor Visitor. Can't be null.
                      * @param maxGen Maximum number of generations.
                      * @param minErr Minimal accepable error.
                      * @param eliteSize Percentage of the pool to be taken for creating the next pool.
@@ -84,7 +85,8 @@ namespace Headless {
                      * @param mutators Set of operators/mutators for new pool creation.
                      * @return The number of candidates stored in the specified buffer.
                      */
-                    template <typename E, typename... M> std::tuple<int, double, int> train(E* env,
+                    template <typename E, typename V, typename... M>
+                        std::tuple<int, double, int> train(E* env, V* visitor,
                             unsigned int maxGen, double minErr, double eliteSize,
                             C** store, unsigned int size,
                             M... mutators) {
@@ -104,6 +106,10 @@ namespace Headless {
                             for(unsigned int i = 0; i < eliteCount; ++i) {
                                 _reverse[eliteCount - i] = _score[i];
                                 totalScore += _score[i];
+                            }
+                            // Visit the elite.
+                            if(visitor != nullptr) {
+                                visitor->visit(_pool, eliteCount);
                             }
                             // Let's recycle candidates from eliteCount to _count - 1.
                             #pragma omp parallel for
