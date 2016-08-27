@@ -22,6 +22,112 @@ namespace Headless {
     namespace Logic {
         namespace NeuralNet {
 
+
+            /**
+             * Trivial mono-layer recursive neural-net.
+             * (Input(t), Output(t), Intermediate(t)) -> F -> (Output(t+1), Intermediate(t+1))
+             */
+            template class TrivialMonoRecursive {
+                public:
+                    /**
+                     * Constructor.
+                     * @param input Number of input signals.
+                     * @param output Number of output signals.
+                     * @param intermediate Number of intermediate neurons.
+                     */
+                    TrivialMonoRecursive(unsigned int input, unsigned int output, unsigned int intermediate);
+
+                    /**
+                     * Destructor.
+                     */
+                    ~TrivialMonoRecursive();
+
+                    /**
+                     * Perform one computation step.
+                     * @param input Input vector (containing numbers in [0;1])
+                     * @param output Result vector (containing numbers in [0;1])
+                     * @param function Activation function.
+                     * @param <F> Activation function type. It must implement the following:
+                     *      double compute(double inValue, double bias);
+                     */
+                    template <F> void compute(double *input, double *output, F *function);
+
+                    double *weights() { return _weight; }
+
+                    double *biases() { return _bias; }
+
+                private:
+                    /**
+                     * Input signals.
+                     */
+                    double *_input;
+
+                    /**
+                     * Output signals.
+                     */
+                    double *_output;
+
+                    /**
+                     * Weights.
+                     */
+                    double *_weight;
+
+                    /**
+                     * Biases.
+                     */
+                    double *_bias;
+
+                    /**
+                     * Input signal count.
+                     */
+                    unsigned int _inCount;
+
+                    /**
+                     * Output signal count.
+                     */
+                    unsigned int _outCount;
+
+                    /**
+                     * Intermediate neurons count.
+                     */
+                    unsigned int _mediumCount;
+            };
+
+
+            TrivialMonoRecursive::TrivialMonoRecursive(
+                    unsigned int input, unsigned int output, unsigned int intermediate) :
+                _input(new double[input + output + intermediate]),
+                _output(new double[output + intermediate]),
+                _weight(new double[(input + output + intermediate) * (output + intermediate)]),
+                _biases(new double[output + intermediate]),
+                _inCount(input), _outCount(output), _mediumCount(intermediate) {
+                }
+
+            TrivialMonoRecursive::~TrivialMonoRecursive() {
+                delete[] _input;
+                delete[] _output;
+                delete[] _weigth;
+                delete[] _bias;
+            }
+
+            template <typename F>
+                void TrivialMonoRecursive::compute(double* inSig, double* outSig, F* function) {
+                    memcpy(_input, inSig, _inCount);
+                    const unsigned int size = _outCount + _mediumCount;
+                    const unsigned int inSize = _inCount + size;
+                    memcpy(_input + _inCount, _output, size);
+#pragma openmp parallel for
+                    for(unsigned int i = 0; i < size; ++i) {
+                        double inValue = 0;
+                        double *inW = _weigth + (i * inSize);
+                        for(unsigned int j = 0; j < inSize; ++j) {
+                            inValue += _input[j] * inW[j];
+                        }
+                        _output[i] = function->compute(inValue, _bias[i]);
+                    }
+                    memcpy(outSig, _output, _outCount);
+                }
+
             /**
              * Simple Mono-Layer Recursive Neural-Net.
              * Implementation of the core-engine of a lifetime
@@ -30,7 +136,7 @@ namespace Headless {
              * @param <F> The activation function. There's only
              *    one per neural-net in this case.
              *    An activation function must define the following:
-             *      F(inputSignalCount)
+             *      F(neuronId, inputSignalCount, args...)
              *      double compute(double *);
              */
             template <typename F> class MonoRecursive {
@@ -40,8 +146,12 @@ namespace Headless {
                      * @param input Number of input signals.
                      * @param output Number of output signals.
                      * @param intermediate Number of intermediate neurons.
+                     * @þaram <A...> List of arguments type for neurons initialisation.
+                     * @param args... Arguments list for neuron initialisation.
                      */
-                    MonoRecursive(unsigned int input, unsigned int output, unsigned int intermediate);
+                    template<typename A...>
+                        MonoRecursive(unsigned int input, unsigned int output, unsigned int intermediate
+                                A args...);
 
                     /**
                      * Destructor.
@@ -100,37 +210,43 @@ namespace Headless {
                     unsigned int _mediumCount;
             };
 
-            MonoRecursive::MonoRecursive(unsigned int input, unsigned int output, unsigned int intermediate) :
-                _input(new double[input + output + intermediate]),
-                _output(new double[output + intermediate]),
-                _layer(new F*[output + intermediate]),
-                _inCount(input), _outCount(output), _mediumCount(intermediate) {
-                unsigned int size = output + intermediate;
-                for(unsigned int i = 0; i < size; ++i) {
-                    _layer[i] = new F(input + output + intermediate);
-                }
-            }
+            template <typename F>
+                template <typename A...>
+                MonoRecursive<F>::MonoRecursive(
+                        unsigned int input, unsigned int output, unsigned int intermediate,
+                        A args...) :
+                    _input(new double[input + output + intermediate]),
+                    _output(new double[output + intermediate]),
+                    _layer(new F*[output + intermediate]),
+                    _inCount(input), _outCount(output), _mediumCount(intermediate) {
+                        unsigned int size = output + intermediate;
+                        for(unsigned int i = 0; i < size; ++i) {
+                            _layer[i] = new F(i, input + output + intermediate, args...);
+                        }
+                    }
 
-            void MonoRecursive::compute(double *input, double *output) {
-                memcpy(_input, input, _inCount);
-                unsigned int size = _outCount + _mediumCount;
-                memcpy(_input + _inCount, _output, size);
-                #pragma openmp parallel for
-                for(unsigned int i = 0; i < size; ++i) {
-                    _output[i] = _layer[i]->compute(_input);
+            template <typename F>
+                void MonoRecursive<F>::compute(double *input, double *output) {
+                    memcpy(_input, input, _inCount);
+                    unsigned int size = _outCount + _mediumCount;
+                    memcpy(_input + _inCount, _output, size);
+#pragma openmp parallel for
+                    for(unsigned int i = 0; i < size; ++i) {
+                        _output[i] = _layer[i]->compute(_input);
+                    }
+                    memcpy(output, _output, _outCount);
                 }
-                memcpy(output, _output, _outCount);
-            }
 
-            MonoRecursive::~MonoRecursive() {
-                delete[] _input;
-                delete[] _output;
-                unsigned int size = _outCount + _mediumCount;
-                for(unsigned int i = 0; i < size; ++i) {
-                    delete _layer[i];
+            template <typename F>
+                MonoRecursive<F>::~MonoRecursive() {
+                    delete[] _input;
+                    delete[] _output;
+                    unsigned int size = _outCount + _mediumCount;
+                    for(unsigned int i = 0; i < size; ++i) {
+                        delete _layer[i];
+                    }
+                    delete[] _layer;
                 }
-                delete[] _layer;
-            }
 
         } // Namespace 'NeuralNet'
     } // Namespace 'Logic'
