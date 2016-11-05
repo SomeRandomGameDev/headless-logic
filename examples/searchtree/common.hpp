@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include <iostream>
 #include <set>
-#include "searchtree.hpp"
+#include <headless-logic/searchtree.hpp>
 
 class Region {
     public:
@@ -180,10 +180,10 @@ class MemoryInspector {
                 << std::endl;
         }
 
-        void visit(Node<glm::vec2, Region, Element>* target,
+        void visit(Headless::Logic::SearchTree::Node<glm::vec2, Region, Element>* target,
                 const Region* region, Element** elements,
-                Node<glm::vec2, Region, Element>** nodes,
-                Node<glm::vec2, Region, Element>* parent,
+                Headless::Logic::SearchTree::Node<glm::vec2, Region, Element>** nodes,
+                Headless::Logic::SearchTree::Node<glm::vec2, Region, Element>* parent,
                 bool leaf,
                 unsigned int count,
                 unsigned int cardinality) {

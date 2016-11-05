@@ -22,6 +22,16 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 
+/**
+ * Flock Agent.
+ */
+
+template <typename O, typename I, typename K> class Agent {
+    public:
+
+};
+
+
 int main() {
 
     sf::Texture texture;
