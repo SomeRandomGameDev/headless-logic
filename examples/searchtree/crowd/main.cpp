@@ -103,6 +103,7 @@ int main(void) {
     Headless::Logic::SearchTree::Node<glm::vec2, Region, Element> tree(&region, 3);
 
     Element **pool = new Element*[AGENT_COUNT];
+    Element **searchResult = new Element*[AGENT_COUNT];
     std::random_device randomDevice;
     std::mt19937 mt(randomDevice());
     std::uniform_real_distribution<double> posDist(0.0, 1024.0);
@@ -119,6 +120,8 @@ int main(void) {
     sf::Time elapsed;
     glm::vec2 target;
     glm::vec2 velocity;
+
+    Disc searchDisc;
 
     while (window.isOpen()) {
         // Logic update
@@ -138,6 +141,19 @@ int main(void) {
                 pool[i]->velocity(velocity);
             }
             tree.move(pool[i], target);
+
+            // Search neighbor and take mean velocity.
+            searchDisc.set(target, 32.0);
+            unsigned int count = tree.retrieve(searchDisc, searchResult, AGENT_COUNT);
+            glm::vec2 meanVelocity(0.0, 0.0);
+            for(unsigned int j = 0; j < count; ++j) {
+                meanVelocity += searchResult[j]->velocity();
+            }
+            if(count > 0) {
+                meanVelocity.x /= (double) count;
+                meanVelocity.y /= (double) count;
+                pool[i]->velocity(meanVelocity);
+            }
         }
 
         // Event handling.
@@ -175,6 +191,11 @@ int main(void) {
 
     }
 
-    // Clean exit.
+    // Clean Exit.
+    for(unsigned int i = 0; i < AGENT_COUNT; ++i) {
+        delete pool[i];
+    }
+    delete []pool;
+    delete []searchResult;
     return 0;
 }
