@@ -15,7 +15,6 @@
  */
 #ifndef HEADLESS_LOGIC_SEARCH_TREE
 #define HEADLESS_LOGIC_SEARCH_TREE
-
 #define DEFAULT_CARD 16
 #define VISIT_BUFFER_SIZE 32
 namespace Headless {
@@ -48,6 +47,9 @@ namespace Headless {
              */
             template <typename K, typename R, typename E> class Node {
                 public:
+                    /**
+                     * Default visitor.
+                     */
                     class Visitor {
                         public:
                             void enter(const R&) {}
@@ -184,7 +186,8 @@ namespace Headless {
 #ifdef TREE_DEBUG
                             loop = true;
 #endif
-                            for(unsigned int i = 0; i < result->_count; ++i) {
+                            unsigned int count = result->_region->dimension();
+                            for(unsigned int i = 0; i < count; ++i) {
                                 if(nodes[i]->_region->contains(key)) {
                                     result = nodes[i];
 #ifdef TREE_DEBUG
@@ -298,13 +301,15 @@ namespace Headless {
 
             template <typename K, typename R, typename E>
                 void Node<K, R, E>::move(E* element, K& key) {
-                    const K& elementKey = element->key();
-                    element->key(key);
+                    K elementKey = element->key();
                     Node<K, R, E>* sourceNode = find(elementKey);
                     Node<K, R, E>* destinationNode = find(key);
                     if(destinationNode != sourceNode) {
-                        destinationNode->add(element);
                         sourceNode->remove(element);
+                        element->key(key);
+                        destinationNode->add(element);
+                    } else {
+                        element->key(key);
                     }
                 }
 
