@@ -44,13 +44,17 @@ class Disc {
 
 class Element {
     public:
-        Element(glm::vec2 key, std::string name) : _key(key), _name(name) {}
+        Element(glm::vec2 key, std::string name) : _key(key), _velocity(0, 0), _name(name) {}
         const glm::vec2 &key() const { return _key; }
         void key(glm::vec2 &key) { _key = key; }
         const std::string &name() const { return _name; }
         inline void set(const glm::vec2 pos) { _key = pos; }
+        void velocity(const glm::vec2 vel) { _velocity = vel; }
+        const glm::vec2 &velocity() const { return _velocity; }
+        //const glm::vec2 &move(double delta) { _key += _velocity * delta; return _key; }
     private:
         glm::vec2 _key;
+        glm::vec2 _velocity;
         std::string _name;
 };
 

@@ -98,15 +98,41 @@ int main(void) {
     Element **pool = new Element*[AGENT_COUNT];
     std::random_device randomDevice;
     std::mt19937 mt(randomDevice());
-    std::uniform_real_distribution<double> distribution(0.0, 1024.0);
+    std::uniform_real_distribution<double> posDist(0.0, 1024.0);
+    std::uniform_real_distribution<double> velDist(-20.0, 20.0);
 
     for(unsigned int i = 0; i < AGENT_COUNT; ++i) {
-        pool[i] = new Element(glm::vec2(distribution(mt), distribution(mt)),
+        pool[i] = new Element(glm::vec2(posDist(mt), posDist(mt)),
                 std::string("Agent#").append(std::to_string(i)));
+        pool[i]->velocity(glm::vec2(velDist(mt), velDist(mt)));
         tree.add(pool[i]);
     }
 
+    sf::Clock clock;
+    sf::Time elapsed;
+    glm::vec2 target;
+    glm::vec2 velocity;
+
     while (window.isOpen()) {
+        // Logic update
+        elapsed = clock.restart();
+        float sec = elapsed.asSeconds();
+
+        for(unsigned int i = 0; i < AGENT_COUNT; ++i) {
+            target = pool[i]->key();
+            velocity = pool[i]->velocity();
+            target.x += velocity.x * sec;
+            target.y += velocity.y * sec;
+            if(target.x < 0 || target.y < 0 || target.x > 1024.0 || target.y > 1024.0) {
+                target.x = posDist(mt);
+                target.y = posDist(mt);
+                velocity.x = velDist(mt);
+                velocity.y = velDist(mt);
+                pool[i]->velocity(velocity);
+            }
+            tree.move(pool[i], target);
+        }
+
         // Event handling.
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -115,6 +141,7 @@ int main(void) {
             }
         }
 
+        // Draw
         window.clear(sf::Color::Black);
 
         sf::Vector2i localPosition = sf::Mouse::getPosition(window);
