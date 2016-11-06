@@ -66,7 +66,14 @@ class DisplayerVisitor {
 #endif
         }
         void exit(const Region&) {}
-        void inspect(Element **, unsigned int) {}
+        void inspect(Element **, unsigned int count) {
+            if(count == 0) {
+               // std::cout << "Empty leaf !" << std::endl;
+            }
+            if(count > 3) {
+                std::cout << "Node Overflow !" << std::endl;
+            }
+        }
 };
 
 #define AGENT_COUNT 256
@@ -99,7 +106,7 @@ int main(void) {
     std::random_device randomDevice;
     std::mt19937 mt(randomDevice());
     std::uniform_real_distribution<double> posDist(0.0, 1024.0);
-    std::uniform_real_distribution<double> velDist(-20.0, 20.0);
+    std::uniform_real_distribution<double> velDist(-128.0, 128.0);
 
     for(unsigned int i = 0; i < AGENT_COUNT; ++i) {
         pool[i] = new Element(glm::vec2(posDist(mt), posDist(mt)),

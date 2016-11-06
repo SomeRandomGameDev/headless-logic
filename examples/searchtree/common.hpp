@@ -20,6 +20,7 @@ class Region {
         inline glm::vec4 boundary() const { return _boundary; }
         bool contains(const glm::vec2 &) const;
         int contains(const Region &) const;
+        void diagnostic(const glm::vec2 &) const;
     private:
         glm::vec4 _boundary;
 };
@@ -51,7 +52,6 @@ class Element {
         inline void set(const glm::vec2 pos) { _key = pos; }
         void velocity(const glm::vec2 vel) { _velocity = vel; }
         const glm::vec2 &velocity() const { return _velocity; }
-        //const glm::vec2 &move(double delta) { _key += _velocity * delta; return _key; }
     private:
         glm::vec2 _key;
         glm::vec2 _velocity;

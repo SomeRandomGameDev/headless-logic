@@ -15,11 +15,26 @@ const Region *Region::divide() const {
 }
 
 bool Region::contains(const glm::vec2 &key) const {
-    bool result = key.x <= _boundary.x + _boundary.p;
-    result &= key.x >= _boundary.x;
-    result &= key.y >= _boundary.y;
-    result &= key.y <= _boundary.y + _boundary.q;
+    bool result = key.x >= _boundary.x &&
+        key.x <= _boundary.x + _boundary.p &&
+        key.y >= _boundary.y &&
+        key.y <= _boundary.y + _boundary.q;
     return result;
+}
+
+void Region::diagnostic(const glm::vec2 &key) const {
+    std::cout << "Test against " << key.x << ", " << key.y << std::endl;
+    std::cout << "Boundary is [" << _boundary.x << " - "
+        << _boundary.x + _boundary.p
+        << "] : [" << _boundary.y << " - "
+        << _boundary.y + _boundary.q << "]" << std::endl;
+    if(key.x >= _boundary.x && key.x <= _boundary.x + _boundary.p &&
+            key.y >= _boundary.y &&
+            key.y <= _boundary.y + _boundary.q) {
+        std::cout << "Test Ok" << std::endl;
+    } else {
+        std::cout << "Not in region" << std::endl;
+    }
 }
 
 int Region::contains(const Region &region) const {
