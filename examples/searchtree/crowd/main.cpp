@@ -77,6 +77,7 @@ class DisplayerVisitor {
 };
 
 #define AGENT_COUNT 256
+#define AREA_SIZE 800
 
 /**
  * Main procedure.
@@ -92,21 +93,21 @@ int main(void) {
 
     sf::Sprite sprite;
 
-    sf::RenderWindow window(sf::VideoMode(1024, 1024), "Crowd Control",
+    sf::RenderWindow window(sf::VideoMode(AREA_SIZE, AREA_SIZE), "Crowd Control",
             sf::Style::Titlebar | sf::Style::Close);
     window.setFramerateLimit(60);
 
     DisplayerVisitor visitor;
     visitor.set(&sprite, &window);
 
-    Region region(glm::vec4(0.0, 0.0, 1024.0, 1024.0));
+    Region region(glm::vec4(0.0, 0.0, AREA_SIZE, AREA_SIZE));
     Headless::Logic::SearchTree::Node<glm::vec2, Region, Element> tree(&region, 3);
 
     Element **pool = new Element*[AGENT_COUNT];
     Element **searchResult = new Element*[AGENT_COUNT];
     std::random_device randomDevice;
     std::mt19937 mt(randomDevice());
-    std::uniform_real_distribution<double> posDist(0.0, 1024.0);
+    std::uniform_real_distribution<double> posDist(0.0, AREA_SIZE);
     std::uniform_real_distribution<double> velDist(-128.0, 128.0);
 
     for(unsigned int i = 0; i < AGENT_COUNT; ++i) {
@@ -133,7 +134,7 @@ int main(void) {
             velocity = pool[i]->velocity();
             target.x += velocity.x * sec;
             target.y += velocity.y * sec;
-            if(target.x < 0 || target.y < 0 || target.x > 1024.0 || target.y > 1024.0) {
+            if(target.x < 0 || target.y < 0 || target.x > AREA_SIZE || target.y > AREA_SIZE) {
                 target.x = posDist(mt);
                 target.y = posDist(mt);
                 velocity.x = velDist(mt);
